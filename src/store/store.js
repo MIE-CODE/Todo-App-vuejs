@@ -2,20 +2,7 @@ import { createStore } from "vuex";
 
 export const store = createStore({
   state: {
-    todos: [
-      {
-        text: "make tea",
-        id: 0,
-        isReadonly: true,
-        disabled: "opacity-60",
-      },
-      {
-        text: "sleep",
-        id: 1,
-        isReadonly: true,
-        disabled: "opacity-60",
-      },
-    ],
+    todos: [],
   },
 
   mutations: {
@@ -27,6 +14,8 @@ export const store = createStore({
 
         checkBox: false,
       });
+      var taskLength = state.todos.length;
+      return taskLength;
     },
 
     finishedTask(state, id) {
