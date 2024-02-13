@@ -2,7 +2,7 @@
   <div
     class="w-[100%] min-h-screen bg-gradient-to-br from-slate-300 to-slate-900 px-3 md:px-5 pb-10"
   >
-    <Header :counter="count" />
+    <Header :counter="taskLength" />
     <Main @taskAdded="taskAdded"></Main>
   </div>
 </template>
@@ -10,25 +10,24 @@
 <script>
 import Header from "./Header.vue";
 import Main from "./Main.vue";
+import { useStore } from "vuex";
+import { computed } from "vue";
 
 export default {
   name: "App",
   components: { Header, Main },
-  data() {
-    return {
-      taskNumber: null,
-      count: null,
-    };
+
+  setup() {
+    const store = useStore();
+    const count = computed(() => {
+      return store.getters.taskLength;
+    });
+    const taskLength = count.value;
+
+    console.log(count.value);
+
+    return { taskLength };
   },
-  methods: {
-    taskAdded(index) {
-      this.taskNumber = index;
-      this.count = index;
-    },
-  },
-  // setup(index) {
-  //   console.log(index);
-  // },
 };
 </script>
 

@@ -8,8 +8,8 @@
         <img class="w-10 h-10" src="./assets/Todo-list.png" :alt="tittle" />
         <span
           class="bg-red-200 absolute text-xs font-extrabold text-center rounded-[50%] px-1 text-stone-700 right-0 top-[60px]"
-          >{{ counter }} 0</span
-        >
+          >{{ counter }}
+        </span>
       </h1>
     </div>
   </div>

@@ -22,22 +22,44 @@
       <div v-if="todos.length">
         <transition-group class="grid gap-3" tag="ul" name="lists" appear>
           <li
+            :class="
+              todo.checkBox
+                ? 'opacity-60 cursor-not-allowed transition duration-300'
+                : 'opacity-100  transition duration-200'
+            "
             class="bg-slate-500 rounded-lg flex justify-between px-5 py-2 md:py-3"
             v-for="todo in todos"
             :key="todo.id"
           >
-            <input
-              class="bg-transparent w-[60%] outline-none text-green-200 read-only:text-gray-400"
-              type="text"
-              :placeholder="todo.text"
-              :readonly="todo.isReadonly"
-            />
+            <div class="flex items-center gap-4 w-[80%]">
+              <input
+                v-model="todo.checkBox"
+                @click="finsishedTask(id)"
+                type="checkbox"
+                class="text-pink-500 w-4 h-4 rounded-[50%] appearance-none hover:ring-gray-400 ring-gray-300 ring checked:bg-slate-600 focus:outline-none transition duration-150"
+              />
+              <input
+                class="bg-transparent w-[60%] outline-none placeholder:text-[#def5de] text-[#def5de] read-only:text-[#ebefeb]"
+                type="text"
+                v-bind:focus="!todo.isReadonly"
+                :placeholder="todo.text"
+                :readonly="todo.isReadonly"
+                @keypress.enter="editTask(todo.id)"
+              />
+            </div>
 
-            <div class="flex gap-3 text-[#dae8c9cc]">
-              <button ref="edditor" @click="edditTask(todo.id)">
+            <div class="flex gap-3">
+              <button
+                :disabled="todo.checkBox"
+                class="text-[#dae8c9cc] hover:opacity-70 active:opacity-100 duration-200"
+                @click="editTask(todo.id)"
+              >
                 {{ todo.isReadonly ? "Edit" : "Save" }}
               </button>
-              <button @click="deleteTodo(todo.id)" class="text-[crimson]">
+              <button
+                @click="deleteTodo(todo.id)"
+                class="text-[crimson] hover:opacity-70 active:opacity-100 transition duration-150"
+              >
                 delete
               </button>
             </div>
@@ -53,49 +75,46 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { useStore } from "vuex";
+
 export default {
   setup(props, { emit }) {
-    const todos = ref([
-      { text: "make tea", id: 0, isReadonly: true },
-      { text: "sleep", id: 1, isReadonly: true },
-    ]);
+    const todos = computed(() => store.state.todos);
     const newTodo = ref("");
-
+    const store = useStore();
+    const checkBox = ref("");
     const addTodo = () => {
-      if (newTodo.value) {
-        const id = todos.value.length;
-        todos.value = [
-          { text: newTodo.value, id, isReadonly: true },
-          ...todos.value,
-        ];
-
-        newTodo.value = "";
+      if (newTodo.value.trim() !== "") {
+        store.commit("addTodo", newTodo.value);
+        newTodo.value = ""; // Clear input after adding task
       } else {
         emit("badValue");
       }
     };
 
+    const finsishedTask = (id) => {
+      store.commit("finishedTask", id);
+    };
+
     const deleteTodo = (id) => {
-      todos.value = todos.value.filter((todo) => todo.id !== id);
+      store.commit("deleteTodo", id);
       console.log(id);
     };
-    const isReadonly = ref(true);
-    const edit = ref("Edit");
 
-    const edditTask = (id) => {
+    const editTask = (id) => {
       console.log(id);
-      todos.value[id].isReadonly = !todos.value[id].isReadonly;
+      store.commit("editTask", id);
     };
 
     return {
       todos,
       newTodo,
+      checkBox,
       addTodo,
       deleteTodo,
-      edditTask,
-      edit,
-      isReadonly,
+      editTask,
+      finsishedTask,
     };
   },
 };
