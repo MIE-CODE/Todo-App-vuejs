@@ -1,5 +1,4 @@
-import type { Task } from '#features/tasks/schemas/task'
-import type { TaskListQuery } from '#features/tasks/schemas/task'
+import type { Task, TaskListQuery } from '#features/tasks/schemas/task'
 import { taskStorageKey } from '#shared/constants/app'
 
 export interface TaskBoardCache {
