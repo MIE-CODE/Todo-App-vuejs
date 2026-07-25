@@ -255,19 +255,18 @@ useSeoMeta({
     </ClientOnly>
 
     <div class="space-y-3 rounded-xl border border-default bg-default p-4">
-      <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <UInput
-          v-model="search"
-          icon="i-lucide-search"
-          placeholder="Search tasks…"
-          class="w-full lg:max-w-sm"
-          aria-label="Search tasks"
-        />
-        <TaskFilters @change="onFiltersChange" />
-      </div>
+      <UInput
+        v-model="search"
+        icon="i-lucide-search"
+        placeholder="Search tasks…"
+        size="lg"
+        class="w-full lg:max-w-lg"
+        aria-label="Search tasks"
+      />
+      <TaskFilters @change="onFiltersChange" />
 
       <div v-if="store.meta" class="text-sm text-muted">
-        {{ store.meta.total }} tasks on the board
+        <b>{{ store.meta.total }}</b> tasks on the board
       </div>
     </div>
 
