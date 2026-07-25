@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { useMediaQuery, usePointerSwipe } from '@vueuse/core'
+import { computed, nextTick, ref, watch } from 'vue'
 import type { Task } from '#features/tasks/schemas/task'
 import { useTaskBoard } from '#features/tasks/composables/useTaskBoard'
 import type { BoardStatus } from '#features/tasks/utils/groupByStatus'
 import { BOARD_STATUSES, BOARD_STATUS_LABELS } from '#features/tasks/utils/groupByStatus'
-import { formatRelativeDue } from '#shared/utils/date'
+import { combineDueDateTime, formatRelativeDue, formatTimeLabel } from '#shared/utils/date'
 
 const props = defineProps<{
   task: Task
@@ -25,30 +24,35 @@ const cardRef = ref<HTMLElement | null>(null)
 const titleInputRef = ref<HTMLInputElement | null>(null)
 const editing = ref(false)
 const draftTitle = ref(props.task.title)
-const swipeOffset = ref(0)
-const revealDelete = ref(false)
-
-const isCoarsePointer = useMediaQuery('(pointer: coarse)')
-const prefersReducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 
 const isSelected = computed(() => selectedId.value === props.task.id)
 const isChecked = computed(() => isMultiSelected(props.task.id))
-const multiSelectActive = computed(() => {
-  // Parent selection list length is not injected; treat checkbox mode when any selected elsewhere
-  // via the checked state or when coarse pointer multi-select is intentional.
-  return isChecked.value
-})
 
 const isActive = computed(
   () => props.task.status !== 'done' && props.task.status !== 'archived'
 )
 
+/** Effective due instant: honors the time when one is set, else date-only. */
+const dueInstant = computed(() =>
+  combineDueDateTime(props.task.dueDate, props.task.dueTime)
+)
+
 const isOverdue = computed(
   () =>
-    Boolean(props.task.dueDate)
+    Boolean(dueInstant.value)
     && isActive.value
-    && new Date(props.task.dueDate as string).getTime() < Date.now()
+    && new Date(dueInstant.value as string).getTime() < Date.now()
 )
+
+const dueLabel = computed(() => {
+  if (!props.task.dueDate) {
+    return ''
+  }
+  const relative = formatRelativeDue(props.task.dueDate)
+  return props.task.dueTime
+    ? `${relative} · ${formatTimeLabel(props.task.dueTime)}`
+    : relative
+})
 
 const priorityColor = computed(() => {
   switch (props.task.priority) {
@@ -163,76 +167,17 @@ function onDragStart(event: DragEvent) {
 function onDragEnd() {
   cardRef.value?.classList.remove('opacity-60')
 }
-
-const { distanceX } = usePointerSwipe(cardRef, {
-  threshold: 40,
-  onSwipe() {
-    if (!isCoarsePointer.value || prefersReducedMotion.value || editing.value) {
-      return
-    }
-    // Cap the visual offset so the card doesn't fly off-screen.
-    swipeOffset.value = Math.max(-96, Math.min(96, distanceX.value))
-  },
-  onSwipeEnd() {
-    if (!isCoarsePointer.value || prefersReducedMotion.value || editing.value) {
-      swipeOffset.value = 0
-      return
-    }
-
-    if (distanceX.value > 64) {
-      void toggleDone(props.task)
-      revealDelete.value = false
-    } else if (distanceX.value < -64) {
-      revealDelete.value = true
-    } else {
-      revealDelete.value = false
-    }
-    swipeOffset.value = 0
-  }
-})
-
-onMounted(() => {
-  // Touch devices: disable HTML5 drag to avoid fighting swipe.
-  if (isCoarsePointer.value && cardRef.value) {
-    cardRef.value.draggable = false
-  }
-})
-
-onBeforeUnmount(() => {
-  swipeOffset.value = 0
-})
 </script>
 
 <template>
   <div class="relative">
-    <!-- Swipe action rails (mobile) -->
-    <div
-      class="pointer-events-none absolute inset-0 flex overflow-hidden rounded-xl"
-      aria-hidden="true"
-    >
-      <div class="flex w-1/2 items-center bg-success/20 px-3 text-success">
-        <UIcon
-          name="i-lucide-check"
-          class="size-5"
-        />
-      </div>
-      <div class="ml-auto flex w-1/2 items-center justify-end bg-error/20 px-3 text-error">
-        <UIcon
-          name="i-lucide-trash-2"
-          class="size-5"
-        />
-      </div>
-    </div>
-
     <article
       ref="cardRef"
       class="group relative rounded-xl border bg-default p-3 shadow-sm transition-colors focus-within:ring-2 focus-within:ring-primary"
       :class="[
         isSelected ? 'border-primary bg-primary/5' : 'border-default hover:bg-muted/30',
-        isChecked ? 'ring-1 ring-primary/40' : '',
-        prefersReducedMotion ? '' : 'transition-transform'
+        isChecked ? 'ring-1 ring-primary/40' : ''
       ]"
-      :style="swipeOffset ? { transform: `translateX(${swipeOffset}px)` } : undefined"
       role="article"
       :aria-current="isSelected ? 'true' : undefined"
       tabindex="0"
@@ -311,10 +256,10 @@ onBeforeUnmount(() => {
               :class="isOverdue ? 'font-medium text-error' : 'text-muted'"
             >
               <UIcon
-                name="i-lucide-calendar"
+                :name="task.dueTime ? 'i-lucide-alarm-clock' : 'i-lucide-calendar'"
                 class="size-3.5"
               />
-              {{ formatRelativeDue(task.dueDate) }}
+              {{ dueLabel }}
             </span>
 
             <UBadge
@@ -336,8 +281,7 @@ onBeforeUnmount(() => {
           variant="ghost"
           size="sm"
           aria-label="Delete task"
-          class="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 sm:opacity-0"
-          :class="revealDelete || multiSelectActive ? '!opacity-100' : ''"
+          class="opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
           @click.stop="remove(task)"
         />
       </div>

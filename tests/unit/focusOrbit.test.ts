@@ -14,6 +14,7 @@ function task(partial: Partial<Task> & Pick<Task, 'id' | 'title'>): Task {
     status: partial.status ?? 'todo',
     priority: partial.priority ?? 'medium',
     dueDate: partial.dueDate ?? null,
+    dueTime: partial.dueTime ?? null,
     tags: [],
     version: 1,
     createdAt: new Date().toISOString(),

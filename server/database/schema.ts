@@ -76,6 +76,8 @@ export const tasks = sqliteTable(
     status: text('status').notNull(),
     priority: text('priority').notNull(),
     dueDate: text('due_date'),
+    /** Optional local `HH:mm` for Plus/Pro reminders; null keeps date-only behavior. */
+    dueTime: text('due_time'),
     tagsJson: text('tags_json').notNull().default('[]'),
     version: integer('version').notNull().default(1),
     createdAt: text('created_at').notNull(),

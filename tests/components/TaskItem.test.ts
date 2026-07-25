@@ -13,6 +13,7 @@ const sampleTask: Task = {
   status: 'todo',
   priority: 'medium',
   dueDate: null,
+  dueTime: null,
   tags: ['vitest'],
   version: 1,
   createdAt: new Date().toISOString(),

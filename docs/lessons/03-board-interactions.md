@@ -37,10 +37,10 @@ does not fire N CSRF-protected PATCHes with ambiguous partial failure. The servi
 is **best-effort per id** and returns `{ updated, failed }`; the store applies an
 optimistic patch and rolls back rejected ids.
 
-## Swipe + inline edit
+## Touch actions + inline edit
 
-- **Swipe** (`usePointerSwipe`): coarse pointers only; right = complete, left =
-  reveal delete. Disabled when fine pointer or `prefers-reduced-motion`.
+- **Touch actions**: complete tasks with the checkbox and delete them with the
+  always-visible mobile delete button.
 - **Inline rename**: double-click / Enter → input; blur / Enter saves; Escape
   cancels. Full edit remains on `/tasks/[id]`.
 

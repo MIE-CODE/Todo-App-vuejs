@@ -1,4 +1,5 @@
-import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from '#shared/constants/app'
+import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME, SESSION_TTL_MS } from '#shared/constants/app'
+import { useAuthStore } from '#features/auth/stores/useAuthStore'
 
 /**
  * Provides a preconfigured `$api` fetch client.
@@ -9,6 +10,8 @@ import { CSRF_COOKIE_NAME, CSRF_HEADER_NAME } from '#shared/constants/app'
  *   cannot produce a matching header — the server only checks cookie === header.
  * - On the server it forwards the incoming request cookies so SSR data fetching
  *   is authenticated as the current user.
+ * - On successful client responses, the local session expiry slides forward so
+ *   the auto-logout timer stays aligned with the server's sliding cookie.
  *
  * All stores/composables use `$api` instead of the global `$fetch` so these
  * concerns live in exactly one place.
@@ -28,6 +31,17 @@ export default defineNuxtPlugin(() => {
       }
 
       options.headers = headers
+    },
+    onResponse({ response }) {
+      if (import.meta.server || !response.ok) {
+        return
+      }
+      // Mirror the server's sliding session: any successful authenticated call
+      // extends the local auto-logout deadline.
+      const auth = useAuthStore()
+      if (auth.isAuthenticated) {
+        auth.sessionExpiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString()
+      }
     }
   })
 

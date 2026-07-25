@@ -13,7 +13,8 @@ export const ENTITLEMENTS = [
   'workload_map',
   'risk_forecast',
   'recommendations',
-  'what_if'
+  'what_if',
+  'task_reminders'
 ] as const
 export type Entitlement = (typeof ENTITLEMENTS)[number]
 
@@ -38,20 +39,21 @@ export const PLAN_NAMES: Record<PlanId, string> = {
 
 export const PLAN_DESCRIPTIONS: Record<PlanId, string> = {
   free: 'Tasks, board, and calendar — everything you need to stay organized.',
-  plus: 'Unlock Focus Orbit: timeline, focus sessions, and workload map.',
+  plus: 'Due times with task alarms, plus Focus Orbit: timeline, focus sessions, and workload map.',
   pro: 'Plus forecasting, next-best actions, and interactive capacity controls.'
 }
 
 export const PLAN_ENTITLEMENTS: Record<PlanId, readonly Entitlement[]> = {
   free: [],
-  plus: ['focus_orbit', 'focus_sessions', 'workload_map'],
+  plus: ['focus_orbit', 'focus_sessions', 'workload_map', 'task_reminders'],
   pro: [
     'focus_orbit',
     'focus_sessions',
     'workload_map',
     'risk_forecast',
     'recommendations',
-    'what_if'
+    'what_if',
+    'task_reminders'
   ]
 }
 
@@ -59,6 +61,7 @@ export const PLAN_FEATURES: Record<PlanId, readonly string[]> = {
   free: ['Unlimited tasks', 'Kanban board', 'Due-date calendar', 'Basic dashboard'],
   plus: [
     'Everything in Free',
+    'Due times & task alarms',
     'Focus Orbit timeline',
     'Focus session planner',
     'Workload map'

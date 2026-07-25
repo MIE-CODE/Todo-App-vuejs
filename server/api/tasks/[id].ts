@@ -1,5 +1,5 @@
 import { updateTaskSchema } from '#features/tasks/schemas/task'
-import { requireUser } from '../../utils/auth'
+import { requireEntitlement, requireUser } from '../../utils/auth'
 import { assertCsrf } from '../../utils/csrf'
 import { defineApiHandler } from '../../utils/defineApiHandler'
 import { notFoundError } from '../../utils/errors'
@@ -28,6 +28,15 @@ export default defineApiHandler(async (event) => {
   if (event.method === 'PATCH') {
     assertCsrf(event)
     const body = parseOrThrow(updateTaskSchema, await readBody(event))
+
+    if (body.dueTime) {
+      await requireEntitlement(
+        event,
+        'task_reminders',
+        'Due times and task alarms require an active Plus or Pro plan.'
+      )
+    }
+
     return service.update(user.id, taskId, body)
   }
 

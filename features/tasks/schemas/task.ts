@@ -5,6 +5,11 @@ import { paginationQuerySchema } from '#shared/schemas/pagination'
 export const taskStatusSchema = z.enum(TASK_STATUSES)
 export const taskPrioritySchema = z.enum(TASK_PRIORITIES)
 
+/** Local wall-clock `HH:mm` (24h). Time-of-day only; the date lives in `dueDate`. */
+export const dueTimeSchema = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Time must be in HH:mm format')
+
 export const taskSchema = z.object({
   id: z.string().min(1),
   userId: z.string().min(1),
@@ -13,6 +18,7 @@ export const taskSchema = z.object({
   status: taskStatusSchema,
   priority: taskPrioritySchema,
   dueDate: z.string().datetime().nullable(),
+  dueTime: dueTimeSchema.nullable(),
   tags: z.array(z.string().min(1).max(40)).max(20),
   version: z.number().int().positive(),
   createdAt: z.string().datetime(),
@@ -28,6 +34,7 @@ export const createTaskSchema = z.object({
   status: taskStatusSchema.default('todo'),
   priority: taskPrioritySchema.default('medium'),
   dueDate: z.string().datetime().optional().nullable(),
+  dueTime: dueTimeSchema.optional().nullable(),
   tags: z.array(z.string().trim().min(1).max(40)).max(20).default([])
 })
 
@@ -40,6 +47,7 @@ export const updateTaskSchema = z
     status: taskStatusSchema.optional(),
     priority: taskPrioritySchema.optional(),
     dueDate: z.string().datetime().nullable().optional(),
+    dueTime: dueTimeSchema.nullable().optional(),
     tags: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
     /**
      * Optimistic concurrency token.
@@ -54,6 +62,7 @@ export const updateTaskSchema = z
       || value.status !== undefined
       || value.priority !== undefined
       || value.dueDate !== undefined
+      || value.dueTime !== undefined
       || value.tags !== undefined,
     { message: 'At least one field must be updated' }
   )

@@ -14,6 +14,7 @@ export interface TaskRow {
   status: TaskStatus
   priority: TaskPriority
   due_date: string | null
+  due_time: string | null
   tags_json: string
   version: number
   created_at: string
@@ -32,6 +33,7 @@ export function mapTaskRowToTask(row: TaskRow): Task {
     status: row.status,
     priority: row.priority,
     dueDate: row.due_date,
+    dueTime: row.due_time,
     tags: Array.isArray(parsedTags)
       ? parsedTags.filter((tag): tag is string => typeof tag === 'string')
       : [],
