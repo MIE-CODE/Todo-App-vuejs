@@ -31,9 +31,9 @@ const features = [
     icon: 'i-lucide-calendar-days'
   },
   {
-    title: 'Understand your productivity',
-    description: 'Completion rate, overdue counts, and 7-day trends — all from your own data.',
-    icon: 'i-lucide-bar-chart-3'
+    title: 'Understand your focus',
+    description: 'Free dashboards stay honest. Plus and Pro unlock Focus Orbit after payment is confirmed.',
+    icon: 'i-lucide-orbit'
   }
 ]
 
@@ -95,9 +95,14 @@ const productSurfaces = [
     icon: 'i-lucide-calendar-range'
   },
   {
-    title: 'Analytics',
-    description: 'Completion rate, status mix, and a 7-day trend — honest numbers from your own SQLite data.',
-    icon: 'i-lucide-trending-up'
+    title: 'Focus Orbit',
+    description: 'Premium animated planning — unlocked only after sandbox payment is confirmed.',
+    icon: 'i-lucide-orbit'
+  },
+  {
+    title: 'Settings',
+    description: 'Preferences, sessions, password, and subscription management in one place.',
+    icon: 'i-lucide-settings'
   }
 ]
 
@@ -140,7 +145,11 @@ const audiences = [
 const faqs = [
   {
     label: 'Is TaskFlow free?',
-    content: 'Yes. Create an account and use the full product. There’s also a demo login if you want to explore first.'
+    content: 'Yes. Free covers tasks, board, and calendar. Plus and Pro unlock Focus Orbit after a sandbox payment is confirmed.'
+  },
+  {
+    label: 'How does the sandbox payment work?',
+    content: 'Checkout is fully local. Use card 4242 4242 4242 4242 to confirm, or 4000 0000 0000 0002 to simulate a decline. Card details are never stored, and premium stays locked until payment status is confirmed.'
   },
   {
     label: 'Do I need an internet account provider?',
@@ -156,7 +165,7 @@ const faqs = [
   },
   {
     label: 'Does it work on mobile?',
-    content: 'Yes. Layouts are responsive from phone to desktop, including the task board and calendar.'
+    content: 'Yes. Layouts are responsive from phone to desktop, including the task board, calendar, and Focus Orbit.'
   },
   {
     label: 'What makes it different from a notes app?',
@@ -416,7 +425,7 @@ const ctaSecondary = computed(() => (isAuthenticated.value ? 'Open TaskFlow' : '
           Everything you need after you sign in
         </h2>
         <p class="text-muted">
-          Dashboard, tasks, calendar, analytics, and settings — one app, one data model, no bolt-ons.
+          Dashboard, tasks, calendar, Focus Orbit, and settings — one app, one data model, with premium gates that stick.
         </p>
       </Reveal>
 
@@ -457,7 +466,6 @@ const ctaSecondary = computed(() => (isAuthenticated.value ? 'Open TaskFlow' : '
         </h2>
         <p class="text-muted">
           A month grid filled with sample due dates — the same view you’ll use after you sign in.
-          Click a day, or watch it cycle through a busy week.
         </p>
       </Reveal>
 
@@ -466,48 +474,23 @@ const ctaSecondary = computed(() => (isAuthenticated.value ? 'Open TaskFlow' : '
       </Reveal>
     </section>
 
-    <!-- Analytics -->
-    <section class="grid items-center gap-10 lg:grid-cols-2">
-      <Reveal from="left">
-        <div class="space-y-4">
-          <p class="text-sm font-medium text-primary">
-            Analytics
-          </p>
-          <h2 class="text-3xl font-semibold tracking-tight">
-            Honest numbers, not vanity metrics
-          </h2>
-          <p class="text-muted">
-            Completion rate, overdue count, and a 7-day trend — enough to notice patterns,
-            not enough to gamify your life.
-          </p>
-        </div>
+    <!-- Focus Orbit + pricing -->
+    <section class="space-y-10">
+      <Reveal class="mx-auto max-w-2xl space-y-3 text-center">
+        <p class="text-sm font-medium text-primary">
+          Premium Focus Orbit
+        </p>
+        <h2 class="text-3xl font-semibold tracking-tight">
+          See gravity in your workload
+        </h2>
+        <p class="text-muted">
+          Free keeps you organized. Plus and Pro unlock an animated Focus Orbit —
+          but only after sandbox payment is confirmed.
+        </p>
       </Reveal>
 
-      <Reveal
-        from="right"
-        :delay="100"
-      >
-        <div class="flex h-full flex-col justify-between gap-6 rounded-2xl border border-default bg-elevated/30 p-8">
-          <div class="flex items-center justify-between gap-3">
-            <span class="text-sm font-medium">
-              Completions this week
-            </span>
-            <UBadge
-              color="primary"
-              variant="subtle"
-            >
-              +18%
-            </UBadge>
-          </div>
-          <div class="flex items-end gap-2 pt-2">
-            <div
-              v-for="(h, index) in [40, 55, 35, 70, 60, 85, 75]"
-              :key="index"
-              class="landing-bar w-full rounded-t bg-primary/80"
-              :style="{ height: `${h}px`, animationDelay: `${index * 70}ms` }"
-            />
-          </div>
-        </div>
+      <Reveal :delay="80">
+        <LandingPricing />
       </Reveal>
     </section>
 

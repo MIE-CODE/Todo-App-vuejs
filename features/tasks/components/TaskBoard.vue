@@ -63,7 +63,12 @@ provideTaskBoard({
 
 const { $api } = useNuxtApp()
 
-const { data, pending, error, refresh: refreshAsyncData } = await useAsyncData(
+const {
+  data,
+  pending,
+  error,
+  refresh: refreshAsyncData
+} = await useAsyncData(
   'tasks-board',
   () =>
     $api<PaginatedResult<Task>>('/api/tasks', {
@@ -166,10 +171,8 @@ async function onBulkMove(status: BoardStatus) {
 onMounted(() => {
   useEventListener('keydown', (event: KeyboardEvent) => {
     const target = event.target as HTMLElement | null
-    const typing
-      = target?.tagName === 'INPUT'
-      || target?.tagName === 'TEXTAREA'
-      || target?.isContentEditable
+    const typing =
+      target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable
 
     if (typing) {
       return
@@ -208,9 +211,7 @@ useSeoMeta({
   <div class="space-y-6">
     <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight">
-          Tasks
-        </h1>
+        <h1 class="text-2xl font-bold tracking-tight">Tasks</h1>
         <p class="mt-1 max-w-2xl text-sm text-muted">
           Drag between columns · double-click to rename ·
           <kbd class="rounded border px-1">n</kbd> to add ·
@@ -229,11 +230,11 @@ useSeoMeta({
           Undo
         </UButton>
         <UButton
-          :icon="showCreate ? 'i-lucide-chevron-up' : 'i-lucide-plus'"
+          :icon="!showCreate ? 'i-lucide-chevron-up' : 'i-lucide-plus'"
           variant="soft"
           @click="showCreate = !showCreate"
         >
-          {{ showCreate ? 'Hide form' : 'New task' }}
+          {{ !showCreate ? 'Hide form' : 'New task' }}
         </UButton>
       </div>
     </header>
@@ -241,7 +242,7 @@ useSeoMeta({
     <ClientOnly>
       <KeepAlive>
         <TaskCreateForm
-          v-if="showCreate"
+          v-if="!showCreate"
           ref="formRef"
           :submit-handler="onCreate"
           :default-priority="defaultPriority"
@@ -265,46 +266,25 @@ useSeoMeta({
         <TaskFilters @change="onFiltersChange" />
       </div>
 
-      <div
-        v-if="store.meta"
-        class="text-sm text-muted"
-      >
+      <div v-if="store.meta" class="text-sm text-muted">
         {{ store.meta.total }} tasks on the board
       </div>
     </div>
 
-    <div
-      v-if="pending && !data"
-      class="grid gap-4 lg:grid-cols-[1fr_280px]"
-    >
+    <div v-if="pending && !data" class="grid gap-4 lg:grid-cols-[1fr_280px]">
       <AppSkeletonList :rows="6" />
       <USkeleton class="h-64 w-full rounded-xl" />
     </div>
 
-    <div
-      v-else-if="error"
-      class="rounded-xl border border-error/30 bg-error/5 p-6"
-      role="alert"
-    >
-      <h2 class="font-semibold text-error">
-        Could not load tasks
-      </h2>
+    <div v-else-if="error" class="rounded-xl border border-error/30 bg-error/5 p-6" role="alert">
+      <h2 class="font-semibold text-error">Could not load tasks</h2>
       <p class="mt-1 text-sm text-muted">
         {{ error.message }}
       </p>
-      <UButton
-        class="mt-4"
-        icon="i-lucide-refresh-cw"
-        @click="refreshAsyncData()"
-      >
-        Retry
-      </UButton>
+      <UButton class="mt-4" icon="i-lucide-refresh-cw" @click="refreshAsyncData()"> Retry </UButton>
     </div>
 
-    <div
-      v-else
-      class="grid gap-4 xl:grid-cols-[1fr_300px]"
-    >
+    <div v-else class="grid gap-4 xl:grid-cols-[1fr_300px]">
       <section class="space-y-3">
         <TaskKanban :columns="columns" />
 

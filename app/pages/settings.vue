@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { TASK_PRIORITIES, THEME_PREFERENCES, WEEK_START_DAYS } from '#shared/constants/app'
+import type { PlanId } from '#shared/constants/billing'
 import { useAuth } from '#features/auth/composables/useAuth'
+import { useBilling } from '#features/billing/composables/useBilling'
 
 definePageMeta({
   middleware: 'auth'
@@ -11,6 +13,17 @@ useSeoMeta({ title: 'Settings · TaskFlow' })
 
 const { preferences, updatePreferences } = useAuth()
 const { setTheme } = useTheme()
+const {
+  subscription,
+  pendingPayment,
+  confirming,
+  lastError,
+  fetchSubscription,
+  startCheckout,
+  confirmPayment
+} = useBilling()
+
+const checkoutOpen = ref(false)
 
 const form = reactive({
   theme: preferences.value?.theme ?? 'system',
@@ -18,13 +31,16 @@ const form = reactive({
   weekStart: preferences.value?.weekStart ?? 'monday'
 })
 
-// Keep local controls in sync if the store loads/refreshes after mount.
 watch(preferences, (value) => {
   if (value) {
     form.theme = value.theme
     form.defaultPriority = value.defaultPriority
     form.weekStart = value.weekStart
   }
+})
+
+onMounted(async () => {
+  await fetchSubscription()
 })
 
 async function onThemeChange() {
@@ -39,6 +55,31 @@ async function onPriorityChange() {
 async function onWeekStartChange() {
   await updatePreferences({ weekStart: form.weekStart })
 }
+
+async function onUpgrade(planId: Exclude<PlanId, 'free'>) {
+  const payment = await startCheckout(planId)
+  if (payment) {
+    checkoutOpen.value = true
+  }
+}
+
+async function onConfirm(payload: {
+  cardNumber: string
+  cardExpiry: string
+  cardCvc: string
+}) {
+  if (!pendingPayment.value) {
+    return
+  }
+  const ok = await confirmPayment({
+    attemptId: pendingPayment.value.id,
+    ...payload
+  })
+  if (ok) {
+    checkoutOpen.value = false
+    await fetchSubscription()
+  }
+}
 </script>
 
 <template>
@@ -46,6 +87,11 @@ async function onWeekStartChange() {
     <h1 class="text-2xl font-semibold">
       Settings
     </h1>
+
+    <SubscriptionCard
+      :subscription="subscription"
+      @upgrade="onUpgrade"
+    />
 
     <UCard>
       <template #header>
@@ -118,5 +164,13 @@ async function onWeekStartChange() {
     <SessionsCard />
 
     <PasswordCard />
+
+    <SandboxCheckoutModal
+      v-model:open="checkoutOpen"
+      :payment="pendingPayment"
+      :confirming="confirming"
+      :error="lastError"
+      @confirm="onConfirm"
+    />
   </div>
 </template>

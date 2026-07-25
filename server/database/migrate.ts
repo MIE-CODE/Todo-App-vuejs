@@ -20,6 +20,7 @@ sqlite.exec(`
     email TEXT NOT NULL UNIQUE,
     name TEXT NOT NULL,
     password_hash TEXT,
+    avatar_color TEXT NOT NULL DEFAULT '#6366f1',
     email_verified INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
@@ -29,7 +30,8 @@ sqlite.exec(`
     id TEXT PRIMARY KEY NOT NULL,
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    last_used_at TEXT NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS tasks (
@@ -45,6 +47,41 @@ sqlite.exec(`
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     completed_at TEXT
+  );
+
+  CREATE TABLE IF NOT EXISTS plans (
+    id TEXT PRIMARY KEY NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    price_cents INTEGER NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'usd',
+    entitlements_json TEXT NOT NULL DEFAULT '[]',
+    features_json TEXT NOT NULL DEFAULT '[]',
+    active INTEGER NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0
+  );
+
+  CREATE TABLE IF NOT EXISTS subscriptions (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    plan_id TEXT NOT NULL REFERENCES plans(id),
+    status TEXT NOT NULL DEFAULT 'active',
+    current_period_end TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS payment_attempts (
+    id TEXT PRIMARY KEY NOT NULL,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    plan_id TEXT NOT NULL REFERENCES plans(id),
+    amount_cents INTEGER NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'usd',
+    status TEXT NOT NULL DEFAULT 'pending',
+    idempotency_key TEXT NOT NULL,
+    failure_reason TEXT,
+    created_at TEXT NOT NULL,
+    confirmed_at TEXT
   );
 
   CREATE INDEX IF NOT EXISTS tasks_user_id_idx ON tasks(user_id);
