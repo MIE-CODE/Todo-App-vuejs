@@ -283,7 +283,7 @@ useSeoMeta({
       <UButton class="mt-4" icon="i-lucide-refresh-cw" @click="refreshAsyncData()"> Retry </UButton>
     </div>
 
-    <div v-else class="grid gap-4 xl:grid-cols-[1fr_300px]">
+    <div v-else class="grid gap-4 xl:grid-cols-auto">
       <section class="space-y-3">
         <TaskKanban :columns="columns" />
 
