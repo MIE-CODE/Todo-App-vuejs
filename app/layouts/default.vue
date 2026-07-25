@@ -13,18 +13,15 @@ const links = [
   { label: 'Focus Orbit', to: '/analytics', icon: 'i-lucide-orbit', premium: true }
 ]
 
-const isActive = (path: string) =>
-  route.path === path || route.path.startsWith(`${path}/`)
+const isActive = (path: string) => route.path === path || route.path.startsWith(`${path}/`)
 
-const currentTitle = computed(
-  () => links.find((link) => isActive(link.to))?.label ?? 'TaskFlow'
-)
+const currentTitle = computed(() => links.find((link) => isActive(link.to))?.label ?? 'TaskFlow')
 
 const planId = computed(() => user.value?.planId ?? 'free')
 </script>
 
 <template>
-  <div class="min-h-screen bg-default text-default lg:grid lg:grid-cols-[260px_1fr]">
+  <div class="flex min-h-screen flex-col bg-default text-default lg:h-dvh lg:grid lg:grid-cols-[260px_1fr] lg:overflow-hidden">
     <a
       href="#main"
       class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-white"
@@ -32,11 +29,11 @@ const planId = computed(() => user.value?.planId ?? 'free')
       Skip to content
     </a>
 
-    <aside class="hidden border-r border-default px-4 py-5 lg:flex lg:flex-col">
-      <AppLogo class="mb-8 px-2" />
+    <aside class="hidden border-r border-default px-4 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col">
+      <AppLogo class="mb-8 shrink-0 px-2" />
 
       <nav
-        class="flex-1 space-y-1"
+        class="min-h-0 flex-1 space-y-1 overflow-y-auto"
         aria-label="Primary"
       >
         <UButton
@@ -69,15 +66,15 @@ const planId = computed(() => user.value?.planId ?? 'free')
         :variant="isActive('/settings') ? 'soft' : 'ghost'"
         :color="isActive('/settings') ? 'primary' : 'neutral'"
         block
-        class="justify-start"
+        class="mt-4 shrink-0 justify-start"
       >
         Settings
       </UButton>
     </aside>
 
-    <div class="flex min-h-screen flex-col">
+    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
       <header
-        class="sticky top-0 z-30 flex items-center justify-between border-b border-default bg-default/80 px-4 py-3 backdrop-blur sm:px-6"
+        class="sticky top-0 z-30 flex shrink-0 items-center justify-between border-b border-default bg-default/80 px-4 py-3 backdrop-blur sm:px-6"
       >
         <div class="flex items-center gap-3">
           <AppLogo class="lg:hidden" />
@@ -109,7 +106,7 @@ const planId = computed(() => user.value?.planId ?? 'free')
 
       <!-- Mobile navigation -->
       <nav
-        class="flex gap-1 overflow-x-auto border-b border-default px-2 py-2 lg:hidden"
+        class="flex shrink-0 gap-1 overflow-x-auto border-b border-default px-2 py-2 lg:hidden"
         aria-label="Primary mobile"
       >
         <UButton
@@ -127,7 +124,7 @@ const planId = computed(() => user.value?.planId ?? 'free')
 
       <main
         id="main"
-        class="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6"
+        class="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-4 py-6 sm:px-6"
       >
         <slot />
       </main>
