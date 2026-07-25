@@ -1,9 +1,33 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
+const {
+  public: { appName, appUrl }
+} = useRuntimeConfig()
+
+const siteUrl = (appUrl || 'http://localhost:3000').replace(/\/$/, '')
+const ogImage = `${siteUrl}/og-image.png`
+
 useHead({
   meta: [{ name: 'viewport', content: 'width=device-width, initial-scale=1' }],
   link: [{ rel: 'icon', href: '/favicon.ico' }]
+})
+
+/**
+ * Site-wide social sharing defaults. Individual pages override title/description
+ * via useSeoMeta; the OG/Twitter image falls through to this shared banner.
+ */
+useSeoMeta({
+  ogSiteName: appName,
+  ogType: 'website',
+  ogUrl: siteUrl,
+  ogImage,
+  ogImageWidth: 1200,
+  ogImageHeight: 630,
+  ogImageAlt: `${appName} — plan your day, finish what matters`,
+  twitterCard: 'summary_large_image',
+  twitterImage: ogImage,
+  twitterImageAlt: `${appName} — plan your day, finish what matters`
 })
 
 const { toasts, dismiss } = useAppToast()
