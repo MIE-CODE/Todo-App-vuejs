@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Task } from '#features/tasks/schemas/task'
-import { formatDate } from '#shared/utils/date'
+import { formatDate, formatDueLabel } from '#shared/utils/date'
 
 /**
  * Dumb detail panel.
@@ -80,10 +80,10 @@ const emit = defineEmits<{
         </div>
         <div>
           <dt class="text-muted">
-            Due date
+            Due
           </dt>
           <dd class="font-medium">
-            {{ formatDate(task.dueDate) }}
+            {{ formatDueLabel(task.dueDate, task.dueTime) }}
           </dd>
         </div>
         <div>

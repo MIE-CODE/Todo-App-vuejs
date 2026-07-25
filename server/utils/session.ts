@@ -1,15 +1,12 @@
 import { desc, eq, ne, and } from 'drizzle-orm'
 import { nanoid } from 'nanoid'
 import type { H3Event } from 'h3'
-import { SESSION_COOKIE_NAME } from '#shared/constants/app'
+import { SESSION_COOKIE_NAME, SESSION_TTL_MS } from '#shared/constants/app'
 import type { SessionSummary, SessionUser } from '#shared/types/api'
 import { nowIso } from '#shared/utils/date'
 import { useDatabase } from '../database/client'
 import { sessions, users } from '../database/schema'
 import { createUserRepository } from '../repositories/userRepository'
-
-/** Sessions live for 3 hours from login, then the user must sign in again. */
-const SESSION_TTL_MS = 1000 * 60 * 60 * 3
 
 function cookieOptions(maxAgeSeconds: number) {
   return {
@@ -145,7 +142,13 @@ export async function getOptionalUser(event: H3Event): Promise<SessionUser | nul
     return null
   }
 
-  await db.update(sessions).set({ lastUsedAt: nowIso() }).where(eq(sessions.id, sessionId))
+  // Sliding expiry: each authenticated request extends the cookie + DB row.
+  const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString()
+  await db
+    .update(sessions)
+    .set({ lastUsedAt: nowIso(), expiresAt })
+    .where(eq(sessions.id, sessionId))
+  setCookie(event, SESSION_COOKIE_NAME, sessionId, cookieOptions(SESSION_TTL_MS / 1000))
 
   const repository = createUserRepository()
   const record = await repository.findById(row.userId)
@@ -155,7 +158,7 @@ export async function getOptionalUser(event: H3Event): Promise<SessionUser | nul
 
   const user = await repository.toSessionUser(record)
   event.context.user = user
-  event.context.sessionExpiresAt = row.expiresAt
+  event.context.sessionExpiresAt = expiresAt
   return user
 }
 

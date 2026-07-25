@@ -21,6 +21,7 @@ export function createTaskFactory(
     status: input.status,
     priority: input.priority,
     dueDate: input.dueDate ?? null,
+    dueTime: input.dueTime ?? null,
     tags: input.tags,
     version: 1,
     createdAt: timestamp,

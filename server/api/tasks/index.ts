@@ -1,5 +1,5 @@
 import { createTaskSchema, taskListQuerySchema } from '#features/tasks/schemas/task'
-import { requireUser } from '../../utils/auth'
+import { requireEntitlement, requireUser } from '../../utils/auth'
 import { assertCsrf } from '../../utils/csrf'
 import { defineApiHandler } from '../../utils/defineApiHandler'
 import { parseOrThrow } from '../../utils/validate'
@@ -17,6 +17,15 @@ export default defineApiHandler(async (event) => {
   if (event.method === 'POST') {
     assertCsrf(event)
     const body = parseOrThrow(createTaskSchema, await readBody(event))
+
+    if (body.dueTime) {
+      await requireEntitlement(
+        event,
+        'task_reminders',
+        'Due times and task alarms require an active Plus or Pro plan.'
+      )
+    }
+
     setResponseStatus(event, 201)
     return service.create(user.id, body)
   }

@@ -114,6 +114,7 @@ function ensureSchema(connection: Database.Database) {
       status TEXT NOT NULL,
       priority TEXT NOT NULL,
       due_date TEXT,
+      due_time TEXT,
       tags_json TEXT NOT NULL DEFAULT '[]',
       version INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL,
@@ -167,7 +168,25 @@ function ensureSchema(connection: Database.Database) {
     CREATE INDEX IF NOT EXISTS payment_attempts_user_id_idx ON payment_attempts(user_id);
   `)
 
+  ensureColumn(connection, 'tasks', 'due_time', 'TEXT')
+
   seedPlans(connection)
+}
+
+/** Adds a column to an existing table when older databases predate it. */
+function ensureColumn(
+  connection: Database.Database,
+  table: string,
+  column: string,
+  definition: string
+) {
+  const columns = connection
+    .prepare(`PRAGMA table_info(${table})`)
+    .all() as Array<{ name: string }>
+
+  if (!columns.some((entry) => entry.name === column)) {
+    connection.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`)
+  }
 }
 
 function seedPlans(connection: Database.Database) {

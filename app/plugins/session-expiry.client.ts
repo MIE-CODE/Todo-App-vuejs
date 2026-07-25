@@ -5,10 +5,10 @@ import { useAppToast } from '#shared/composables/useAppToast'
 /**
  * Client-side session expiry watchdog.
  *
- * The server issues 3-hour sessions. This schedules a timer for the exact
- * expiry moment so the app reacts on its own — clearing auth state and, if the
- * user is sitting on a protected page, navigating them back out to /login
- * without needing a manual refresh.
+ * Login is cookie-based with a sliding 3-hour idle window: every authenticated
+ * API call extends both the httpOnly cookie (server) and this client timer.
+ * When the idle window elapses, auth is cleared and protected routes auto-
+ * navigate to /login — no manual refresh required.
  */
 export default defineNuxtPlugin(() => {
   const auth = useAuthStore()

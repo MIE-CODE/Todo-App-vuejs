@@ -25,14 +25,13 @@ export async function requireUser(event: H3Event): Promise<SessionUser> {
  */
 export async function requireEntitlement(
   event: H3Event,
-  entitlement: Entitlement
+  entitlement: Entitlement,
+  message = 'This Focus Orbit feature requires an active Plus or Pro plan after payment is confirmed.'
 ): Promise<SessionUser> {
   const user = await requireUser(event)
 
   if (!planHasEntitlement(user.planId, entitlement) || user.planStatus !== 'active') {
-    throw forbiddenError(
-      'This Focus Orbit feature requires an active Plus or Pro plan after payment is confirmed.'
-    )
+    throw forbiddenError(message)
   }
 
   return user

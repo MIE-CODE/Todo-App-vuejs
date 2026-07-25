@@ -84,6 +84,7 @@ export function createTaskRepository() {
         status: input.status,
         priority: input.priority,
         dueDate: input.dueDate ?? null,
+        dueTime: input.dueTime ?? null,
         tagsJson: JSON.stringify(input.tags),
         version: 1,
         createdAt: timestamp,
@@ -129,6 +130,7 @@ export function createTaskRepository() {
           status: nextStatus,
           priority: input.priority ?? existing.priority,
           dueDate: input.dueDate !== undefined ? input.dueDate : existing.dueDate,
+          dueTime: input.dueTime !== undefined ? input.dueTime : existing.dueTime,
           tagsJson:
             input.tags !== undefined ? JSON.stringify(input.tags) : JSON.stringify(existing.tags),
           version: existing.version + 1,
@@ -225,6 +227,7 @@ function mapRecordToTask(row: typeof tasks.$inferSelect): Task {
     status: row.status as Task['status'],
     priority: row.priority as Task['priority'],
     dueDate: row.dueDate,
+    dueTime: row.dueTime,
     tags: Array.isArray(parsed)
       ? parsed.filter((tag): tag is string => typeof tag === 'string')
       : [],

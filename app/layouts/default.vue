@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useAuth } from '#features/auth/composables/useAuth'
+import { useTaskReminders } from '#features/tasks/composables/useTaskReminders'
 
 const route = useRoute()
 const { isDark, toggle } = useTheme()
 const { user } = useAuth()
+
+// Mounted on the authenticated shell so alarms ring on any page (Plus/Pro).
+const { activeAlarm, dismiss } = useTaskReminders()
 
 const links = [
   { label: 'Dashboard', to: '/dashboard', icon: 'i-lucide-layout-dashboard', premium: false },
@@ -21,7 +25,9 @@ const planId = computed(() => user.value?.planId ?? 'free')
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-default text-default lg:h-dvh lg:grid lg:grid-cols-[260px_1fr] lg:overflow-hidden">
+  <div
+    class="flex min-h-screen flex-col bg-default text-default lg:h-dvh lg:grid lg:grid-cols-[260px_1fr] lg:overflow-hidden"
+  >
     <a
       href="#main"
       class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-white"
@@ -29,13 +35,12 @@ const planId = computed(() => user.value?.planId ?? 'free')
       Skip to content
     </a>
 
-    <aside class="hidden border-r border-default px-4 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col">
+    <aside
+      class="hidden border-r border-default px-4 py-5 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col"
+    >
       <AppLogo class="mb-8 shrink-0 px-2" />
 
-      <nav
-        class="min-h-0 flex-1 space-y-1 overflow-y-auto"
-        aria-label="Primary"
-      >
+      <nav class="min-h-0 flex-1 space-y-1 overflow-y-auto" aria-label="Primary">
         <UButton
           v-for="link in links"
           :key="link.to"
@@ -106,7 +111,7 @@ const planId = computed(() => user.value?.planId ?? 'free')
 
       <!-- Mobile navigation -->
       <nav
-        class="flex shrink-0 gap-1 overflow-x-auto border-b border-default px-2 py-2 lg:hidden"
+        class="flex shrink-0 gap-1 overflow-x-auto border-y border-default px-2 py-2 lg:hidden sticky top-14 z-30 bg-default/80 backdrop-blur"
         aria-label="Primary mobile"
       >
         <UButton
@@ -122,12 +127,16 @@ const planId = computed(() => user.value?.planId ?? 'free')
         </UButton>
       </nav>
 
-      <main
-        id="main"
-        class="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-4 py-6 sm:px-6"
-      >
+      <main id="main" class="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-4 py-6 sm:px-6">
         <slot />
       </main>
     </div>
+
+    <TaskAlarmModal
+      v-if="activeAlarm"
+      :key="activeAlarm.id"
+      :task="activeAlarm"
+      @dismiss="dismiss"
+    />
   </div>
 </template>

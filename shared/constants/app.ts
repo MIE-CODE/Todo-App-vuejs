@@ -5,6 +5,9 @@ export const SESSION_COOKIE_NAME = 'taskflow_session' as const
 export const CSRF_COOKIE_NAME = 'taskflow_csrf' as const
 export const CSRF_HEADER_NAME = 'x-taskflow-csrf' as const
 
+/** Idle session lifetime. Activity slides the cookie + DB expiry forward. */
+export const SESSION_TTL_MS = 1000 * 60 * 60 * 3
+
 export const DEFAULT_PAGE_SIZE = 10
 export const MAX_PAGE_SIZE = 100
 
@@ -22,3 +25,8 @@ export type ThemePreference = (typeof THEME_PREFERENCES)[number]
 
 export const WEEK_START_DAYS = ['sunday', 'monday'] as const
 export type WeekStartDay = (typeof WEEK_START_DAYS)[number]
+
+/** localStorage key for the per-user task board cache. */
+export function taskStorageKey(userId: string): string {
+  return `taskflow:tasks:${userId}`
+}

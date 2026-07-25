@@ -81,6 +81,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout(): Promise<void> {
     const { $api } = useNuxtApp()
+    try {
+      // Drop the web-storage task cache for this user before clearing auth.
+      const { useTaskStore } = await import('#features/tasks/stores/useTaskStore')
+      useTaskStore().clearStorage()
+    } catch {
+      // Task store may be unused on this page; ignore.
+    }
     await $api('/api/auth/logout', { method: 'POST' })
     clearSession()
   }

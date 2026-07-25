@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import type { Task, UpdateTaskInput } from '#features/tasks/schemas/task'
 import { TASK_PRIORITIES, TASK_STATUSES } from '#shared/constants/app'
-import { fromDateInputValue, toDateInputValue } from '#shared/utils/date'
+import { fromDateInputValue, toDateInputValue, toTimeInputValue } from '#shared/utils/date'
+import { useAuthStore } from '#features/auth/stores/useAuthStore'
 
 const props = defineProps<{
   task: Task
@@ -19,8 +20,15 @@ const form = reactive({
   status: props.task.status,
   priority: props.task.priority,
   dueDate: toDateInputValue(props.task.dueDate),
+  dueTime: toTimeInputValue(props.task.dueTime),
   tags: props.task.tags.join(', ')
 })
+
+const auth = useAuthStore()
+/** Due times and alarms are a Plus/Pro entitlement; Free sees a locked control. */
+const canUseReminders = computed(
+  () => auth.user?.entitlements.includes('task_reminders') ?? false
+)
 
 const statusOptions = TASK_STATUSES.map((value) => ({
   label: value.replace('_', ' '),
@@ -41,6 +49,7 @@ watch(
     form.status = task.status
     form.priority = task.priority
     form.dueDate = toDateInputValue(task.dueDate)
+    form.dueTime = toTimeInputValue(task.dueTime)
     form.tags = task.tags.join(', ')
   }
 )
@@ -59,12 +68,17 @@ function onSubmit() {
     .map((tag) => tag.trim())
     .filter(Boolean)
 
+  // A time is meaningless without a date, and only Plus/Pro may set one.
+  const effectiveTime
+    = canUseReminders.value && form.dueDate && form.dueTime ? form.dueTime : null
+
   emit('save', {
     title: form.title.trim(),
     description: form.description.trim() ? form.description.trim() : null,
     status: form.status,
     priority: form.priority,
     dueDate: fromDateInputValue(form.dueDate),
+    dueTime: effectiveTime,
     tags
   })
 }
@@ -136,6 +150,54 @@ function onSubmit() {
         />
       </UFormField>
     </div>
+
+    <UFormField name="dueTime">
+      <template #label>
+        <span class="flex items-center gap-2">
+          Due time
+          <UBadge
+            v-if="!canUseReminders"
+            size="sm"
+            color="primary"
+            variant="subtle"
+          >
+            Plus
+          </UBadge>
+        </span>
+      </template>
+      <template #hint>
+        <span class="text-xs text-muted">
+          Rings a 30s alarm when due
+        </span>
+      </template>
+
+      <AppTimePicker
+        v-if="canUseReminders"
+        v-model="form.dueTime"
+        test-id="edit-due-time-input"
+        aria-label="Due time"
+      />
+      <div
+        v-else
+        class="flex flex-wrap items-center justify-between gap-2 rounded-md border border-dashed border-default bg-muted/20 px-3 py-2 text-sm text-muted"
+      >
+        <span class="flex items-center gap-2">
+          <UIcon
+            name="i-lucide-lock"
+            class="size-4"
+          />
+          Set due times &amp; alarms with Plus or Pro
+        </span>
+        <UButton
+          to="/settings"
+          size="xs"
+          color="primary"
+          variant="soft"
+        >
+          Upgrade
+        </UButton>
+      </div>
+    </UFormField>
 
     <UFormField
       label="Tags"
