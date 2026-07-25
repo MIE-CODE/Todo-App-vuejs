@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, watch } from 'vue'
+import type { TaskPriority, ThemePreference, WeekStartDay } from '#shared/constants/app'
 import { TASK_PRIORITIES, THEME_PREFERENCES, WEEK_START_DAYS } from '#shared/constants/app'
 import type { PlanId } from '#shared/constants/billing'
 import { useAuth } from '#features/auth/composables/useAuth'
@@ -43,16 +44,31 @@ onMounted(async () => {
   await fetchSubscription()
 })
 
-async function onThemeChange() {
+/** Options for AppSelect: value stays the raw union, label is display-cased. */
+function toOptions<T extends string>(values: readonly T[]) {
+  return values.map(value => ({
+    value,
+    label: value.charAt(0).toUpperCase() + value.slice(1).replace('_', ' ')
+  }))
+}
+
+const themeOptions = toOptions(THEME_PREFERENCES)
+const priorityOptions = toOptions(TASK_PRIORITIES)
+const weekStartOptions = toOptions(WEEK_START_DAYS)
+
+async function onThemeChange(value: string) {
+  form.theme = value as ThemePreference
   setTheme(form.theme)
   await updatePreferences({ theme: form.theme })
 }
 
-async function onPriorityChange() {
+async function onPriorityChange(value: string) {
+  form.defaultPriority = value as TaskPriority
   await updatePreferences({ defaultPriority: form.defaultPriority })
 }
 
-async function onWeekStartChange() {
+async function onWeekStartChange(value: string) {
+  form.weekStart = value as WeekStartDay
   await updatePreferences({ weekStart: form.weekStart })
 }
 
@@ -105,58 +121,39 @@ async function onConfirm(payload: {
           label="Theme"
           name="theme"
         >
-          <select
-            v-model="form.theme"
-            data-testid="theme-select"
-            class="w-full rounded-md border border-default bg-default px-3 py-2 text-sm capitalize"
-            @change="onThemeChange"
-          >
-            <option
-              v-for="theme in THEME_PREFERENCES"
-              :key="theme"
-              :value="theme"
-            >
-              {{ theme }}
-            </option>
-          </select>
+          <AppSelect
+            :model-value="form.theme"
+            :options="themeOptions"
+            test-id="theme-select"
+            aria-label="Theme"
+            @update:model-value="onThemeChange"
+          />
         </UFormField>
 
         <UFormField
           label="Default task priority"
           name="defaultPriority"
         >
-          <select
-            v-model="form.defaultPriority"
-            class="w-full rounded-md border border-default bg-default px-3 py-2 text-sm capitalize"
-            @change="onPriorityChange"
-          >
-            <option
-              v-for="priority in TASK_PRIORITIES"
-              :key="priority"
-              :value="priority"
-            >
-              {{ priority }}
-            </option>
-          </select>
+          <AppSelect
+            :model-value="form.defaultPriority"
+            :options="priorityOptions"
+            test-id="default-priority-select"
+            aria-label="Default task priority"
+            @update:model-value="onPriorityChange"
+          />
         </UFormField>
 
         <UFormField
           label="Week starts on"
           name="weekStart"
         >
-          <select
-            v-model="form.weekStart"
-            class="w-full rounded-md border border-default bg-default px-3 py-2 text-sm capitalize"
-            @change="onWeekStartChange"
-          >
-            <option
-              v-for="day in WEEK_START_DAYS"
-              :key="day"
-              :value="day"
-            >
-              {{ day }}
-            </option>
-          </select>
+          <AppSelect
+            :model-value="form.weekStart"
+            :options="weekStartOptions"
+            test-id="week-start-select"
+            aria-label="Week starts on"
+            @update:model-value="onWeekStartChange"
+          />
         </UFormField>
       </div>
     </UCard>

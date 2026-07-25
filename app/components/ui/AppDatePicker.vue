@@ -23,9 +23,17 @@ const props = withDefaults(
 
 const open = ref(false)
 const rootRef = ref<HTMLElement | null>(null)
+const panelRef = ref<HTMLElement | null>(null)
 const view = ref(parseView(model.value))
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'] as const
+const PANEL_WIDTH = 288
+
+const { panelStyle } = useFloatingPanel(rootRef, open, {
+  width: PANEL_WIDTH,
+  maxHeight: 360,
+  zIndex: 200
+})
 
 const monthLabel = computed(() =>
   new Date(Date.UTC(view.value.year, view.value.month - 1, 1)).toLocaleDateString(undefined, {
@@ -92,7 +100,7 @@ function toKey(date: Date): string {
   return date.toISOString().slice(0, 10)
 }
 
-function parseView(value: string): { year: number; month: number } {
+function parseView(value: string): { year: number, month: number } {
   if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [year, month] = value.split('-').map(Number)
     return { year: year!, month: month! }
@@ -164,11 +172,15 @@ function goToday() {
   close()
 }
 
-onClickOutside(rootRef, () => {
-  if (open.value) {
-    close()
-  }
-})
+onClickOutside(
+  rootRef,
+  () => {
+    if (open.value) {
+      close()
+    }
+  },
+  { ignore: [panelRef] }
+)
 
 async function focusTrigger() {
   await nextTick()
@@ -221,79 +233,83 @@ defineExpose({ focusTrigger })
       </button>
     </div>
 
-    <div
-      v-if="open"
-      class="absolute z-40 mt-1 w-72 rounded-xl border border-default bg-default p-3 shadow-lg"
-      role="dialog"
-      aria-label="Calendar"
-    >
-      <div class="mb-3 flex items-center justify-between gap-2">
-        <UButton
-          icon="i-lucide-chevron-left"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          aria-label="Previous month"
-          @click="previousMonth"
-        />
-        <p class="text-sm font-semibold">
-          {{ monthLabel }}
-        </p>
-        <UButton
-          icon="i-lucide-chevron-right"
-          color="neutral"
-          variant="ghost"
-          size="sm"
-          aria-label="Next month"
-          @click="nextMonth"
-        />
-      </div>
+    <Teleport to="body">
+      <div
+        v-if="open"
+        ref="panelRef"
+        class="overflow-auto rounded-xl border border-default bg-default p-3 shadow-lg"
+        :style="panelStyle"
+        role="dialog"
+        aria-label="Calendar"
+      >
+        <div class="mb-3 flex items-center justify-between gap-2">
+          <UButton
+            icon="i-lucide-chevron-left"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            aria-label="Previous month"
+            @click="previousMonth"
+          />
+          <p class="text-sm font-semibold">
+            {{ monthLabel }}
+          </p>
+          <UButton
+            icon="i-lucide-chevron-right"
+            color="neutral"
+            variant="ghost"
+            size="sm"
+            aria-label="Next month"
+            @click="nextMonth"
+          />
+        </div>
 
-      <div class="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-muted">
-        <span
-          v-for="day in WEEKDAYS"
-          :key="day"
-        >{{ day }}</span>
-      </div>
+        <div class="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-muted">
+          <span
+            v-for="day in WEEKDAYS"
+            :key="day"
+          >{{ day }}</span>
+        </div>
 
-      <div class="grid grid-cols-7 gap-1">
-        <button
-          v-for="cell in cells"
-          :key="cell.key"
-          type="button"
-          class="flex size-8 items-center justify-center rounded-full text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          :class="[
-            cell.inMonth ? 'text-default' : 'text-muted/50',
-            cell.selected ? 'bg-primary font-semibold text-white' : 'hover:bg-muted/60',
-            cell.isToday && !cell.selected ? 'ring-1 ring-primary/40' : '',
-            cell.disabled ? 'cursor-not-allowed opacity-30 hover:bg-transparent' : ''
-          ]"
-          :disabled="cell.disabled"
-          :aria-pressed="cell.selected"
-          @click="selectDay(cell)"
-        >
-          {{ cell.day }}
-        </button>
-      </div>
+        <div class="grid grid-cols-7 gap-1">
+          <button
+            v-for="cell in cells"
+            :key="cell.key"
+            type="button"
+            class="flex size-8 items-center justify-center rounded-full text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :class="[
+              cell.inMonth ? 'text-default' : 'text-muted/50',
+              cell.selected ? 'bg-primary font-semibold text-white' : 'hover:bg-muted/60',
+              cell.isToday && !cell.selected ? 'ring-1 ring-primary/40' : '',
+              cell.disabled ? 'cursor-not-allowed opacity-30 hover:bg-transparent' : ''
+            ]"
+            :disabled="cell.disabled"
+            :aria-pressed="cell.selected"
+            @click="selectDay(cell)"
+          >
+            {{ cell.day }}
+          </button>
+        </div>
 
-      <div class="mt-3 flex justify-between border-t border-default pt-2">
-        <UButton
-          color="neutral"
-          variant="ghost"
-          size="xs"
-          @click="clearDate"
-        >
-          Clear
-        </UButton>
-        <UButton
-          color="primary"
-          variant="soft"
-          size="xs"
-          @click="goToday"
-        >
-          Today
-        </UButton>
+        <div class="mt-3 flex justify-between border-t border-default pt-2">
+          <UButton
+            color="neutral"
+            variant="ghost"
+            size="xs"
+            @click="clearDate"
+          >
+            Clear
+          </UButton>
+          <UButton
+            color="primary"
+            variant="soft"
+            size="xs"
+            @click="goToday"
+          >
+            Today
+          </UButton>
+        </div>
       </div>
-    </div>
+    </Teleport>
   </div>
 </template>

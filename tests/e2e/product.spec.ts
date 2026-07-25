@@ -46,6 +46,8 @@ test.describe('product pages', () => {
     await register(page, makeAccount('settings'))
     await gotoHydrated(page, '/settings')
 
+    await page.getByTestId('theme-select').click()
+
     await Promise.all([
       page.waitForResponse(
         (r) =>
@@ -53,7 +55,7 @@ test.describe('product pages', () => {
           && r.request().method() === 'PATCH'
           && r.ok()
       ),
-      page.getByTestId('theme-select').selectOption('dark')
+      page.locator('ul[role="listbox"] li[role="option"]', { hasText: 'Dark' }).click()
     ])
 
     await expect(page.locator('html')).toHaveClass(/dark/)

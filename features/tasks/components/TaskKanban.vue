@@ -16,7 +16,7 @@ const statuses = BOARD_STATUSES as readonly BoardStatus[]
 
 <template>
   <div
-    class="flex gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-3 lg:overflow-visible"
+    class="gap-3 overflow-x-auto pb-2 grid lg:grid-cols-3 lg:overflow-visible"
     data-testid="task-kanban"
     aria-label="Task board"
   >

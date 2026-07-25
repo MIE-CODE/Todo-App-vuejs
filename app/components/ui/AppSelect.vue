@@ -33,8 +33,13 @@ const highlightIndex = ref(-1)
 const rootRef = ref<HTMLElement | null>(null)
 const listRef = ref<HTMLElement | null>(null)
 
+const { panelStyle } = useFloatingPanel(rootRef, open, {
+  maxHeight: 240,
+  zIndex: 200
+})
+
 const selectedOption = computed(
-  () => props.options.find((option) => option.value === model.value) ?? null
+  () => props.options.find(option => option.value === model.value) ?? null
 )
 
 const displayLabel = computed(() => selectedOption.value?.label ?? props.placeholder)
@@ -49,7 +54,7 @@ function openList() {
     return
   }
   open.value = true
-  const current = props.options.findIndex((option) => option.value === model.value)
+  const current = props.options.findIndex(option => option.value === model.value)
   highlightIndex.value = current >= 0 ? current : 0
   void nextTick(() => {
     listRef.value?.focus()
@@ -92,10 +97,10 @@ function onTriggerKeydown(event: KeyboardEvent) {
   }
 
   if (
-    event.key === 'ArrowDown' ||
-    event.key === 'ArrowUp' ||
-    event.key === 'Enter' ||
-    event.key === ' '
+    event.key === 'ArrowDown'
+    || event.key === 'ArrowUp'
+    || event.key === 'Enter'
+    || event.key === ' '
   ) {
     event.preventDefault()
     if (!open.value) {
@@ -132,11 +137,15 @@ function onTriggerKeydown(event: KeyboardEvent) {
   }
 }
 
-onClickOutside(rootRef, () => {
-  if (open.value) {
-    close()
-  }
-})
+onClickOutside(
+  rootRef,
+  () => {
+    if (open.value) {
+      close()
+    }
+  },
+  { ignore: [listRef] }
+)
 
 watch(
   () => model.value,
@@ -144,7 +153,7 @@ watch(
     if (!open.value) {
       return
     }
-    const current = props.options.findIndex((option) => option.value === model.value)
+    const current = props.options.findIndex(option => option.value === model.value)
     if (current >= 0) {
       highlightIndex.value = current
     }
@@ -167,7 +176,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div ref="rootRef" class="relative w-full">
+  <div
+    ref="rootRef"
+    class="relative w-full"
+  >
     <button
       type="button"
       class="flex w-full items-center justify-between gap-2 rounded-md border border-default bg-default px-3 py-2 text-left text-sm outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
@@ -190,38 +202,45 @@ onBeforeUnmount(() => {
       />
     </button>
 
-    <ul
-      v-if="open"
-      ref="listRef"
-      class="absolute z-40 mt-1 max-h-60 w-full overflow-auto rounded-md border border-default bg-default py-1 shadow-lg"
-      role="listbox"
-      tabindex="-1"
-      :aria-activedescendant="
-        highlightIndex >= 0 ? `${testId ?? 'select'}-opt-${highlightIndex}` : undefined
-      "
-      @keydown="onTriggerKeydown"
-    >
-      <li
-        v-for="(option, index) in options"
-        :id="`${testId ?? 'select'}-opt-${index}`"
-        :key="option.value"
-        role="option"
-        class="cursor-pointer px-3 py-2 text-sm"
-        :class="[
-          option.disabled ? 'cursor-not-allowed opacity-40' : '',
-          index === highlightIndex ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50',
-          option.value === model ? 'font-medium' : ''
-        ]"
-        :aria-selected="option.value === model"
-        :aria-disabled="option.disabled || undefined"
-        @mousedown.prevent="selectOption(option)"
-        @mouseenter="highlightIndex = index"
+    <Teleport to="body">
+      <ul
+        v-if="open"
+        ref="listRef"
+        class="overflow-auto rounded-md border border-default bg-default py-1 shadow-lg"
+        :style="panelStyle"
+        role="listbox"
+        tabindex="-1"
+        :aria-activedescendant="
+          highlightIndex >= 0 ? `${testId ?? 'select'}-opt-${highlightIndex}` : undefined
+        "
+        @keydown="onTriggerKeydown"
       >
-        <span class="flex items-center justify-between gap-2">
-          {{ option.label }}
-          <UIcon v-if="option.value === model" name="i-lucide-check" class="size-4" />
-        </span>
-      </li>
-    </ul>
+        <li
+          v-for="(option, index) in options"
+          :id="`${testId ?? 'select'}-opt-${index}`"
+          :key="option.value"
+          role="option"
+          class="cursor-pointer px-3 py-2 text-sm"
+          :class="[
+            option.disabled ? 'cursor-not-allowed opacity-40' : '',
+            index === highlightIndex ? 'bg-primary/10 text-primary' : 'hover:bg-muted/50',
+            option.value === model ? 'font-medium' : ''
+          ]"
+          :aria-selected="option.value === model"
+          :aria-disabled="option.disabled || undefined"
+          @mousedown.prevent="selectOption(option)"
+          @mouseenter="highlightIndex = index"
+        >
+          <span class="flex items-center justify-between gap-2">
+            {{ option.label }}
+            <UIcon
+              v-if="option.value === model"
+              name="i-lucide-check"
+              class="size-4"
+            />
+          </span>
+        </li>
+      </ul>
+    </Teleport>
   </div>
 </template>

@@ -13,11 +13,11 @@ export default defineApiHandler(async (event) => {
   const user = await getOptionalUser(event)
 
   if (!user) {
-    return { user: null, preferences: null }
+    return { user: null, preferences: null, expiresAt: null }
   }
 
   const repository = createUserRepository()
   const preferences = await repository.getPreferences(user.id)
 
-  return { user, preferences }
+  return { user, preferences, expiresAt: event.context.sessionExpiresAt ?? null }
 })
