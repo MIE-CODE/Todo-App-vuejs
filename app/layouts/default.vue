@@ -111,7 +111,7 @@ const planId = computed(() => user.value?.planId ?? 'free')
 
       <!-- Mobile navigation -->
       <nav
-        class="flex shrink-0 gap-1 overflow-x-auto border-y border-default px-2 py-2 lg:hidden sticky top-14 z-30 bg-default/80 backdrop-blur"
+        class="flex shrink-0 gap-1 overflow-x-auto border-t border-default px-2 py-2 lg:hidden fixed w-full bottom-0 z-30 bg-default/80 backdrop-blur"
         aria-label="Primary mobile"
       >
         <UButton
