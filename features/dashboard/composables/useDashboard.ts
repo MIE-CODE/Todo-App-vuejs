@@ -1,8 +1,9 @@
-import type { DashboardSummary } from '#features/analytics/types'
+import type { DashboardCharts, DashboardSummary } from '#features/analytics/types'
 import type { Task } from '#features/tasks/schemas/task'
 
-interface DashboardPayload {
+export interface DashboardPayload {
   summary: DashboardSummary
+  charts: DashboardCharts
   upcoming: Task[]
   overdue: Task[]
 }

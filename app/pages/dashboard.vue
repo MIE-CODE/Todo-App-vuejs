@@ -77,6 +77,17 @@ const greeting = computed(() => {
         />
       </div>
 
+      <div
+        v-if="data?.charts"
+        class="space-y-6"
+      >
+        <CompletionChart :points="data.charts.completedLast7Days" />
+        <BreakdownCharts
+          :priority-counts="data.charts.priorityCounts"
+          :status-counts="data.charts.statusCounts"
+        />
+      </div>
+
       <div class="grid gap-6 lg:grid-cols-2">
         <UCard>
           <template #header>

@@ -6,6 +6,7 @@ import { nowIso } from '#shared/utils/date'
 import { useDatabase } from '../database/client'
 import { oauthIdentities, preferences, users } from '../database/schema'
 import type { UserRecord } from '../database/schema'
+import { createBillingRepository } from './billingRepository'
 
 const AVATAR_COLORS = [
   '#6366f1',
@@ -79,6 +80,8 @@ export function createUserRepository() {
         weekStart: 'monday',
         updatedAt: timestamp
       })
+
+      await createBillingRepository().ensureFreeSubscription(id)
 
       const created = await this.findById(id)
       if (!created) {
@@ -177,6 +180,9 @@ export function createUserRepository() {
     /** Builds the client-safe session user (never leaks the password hash). */
     async toSessionUser(record: UserRecord): Promise<SessionUser> {
       const connectedProviders = await this.listIdentities(record.id)
+      const billing = createBillingRepository()
+      await billing.ensureFreeSubscription(record.id)
+      const subscription = await billing.getSubscription(record.id)
 
       return {
         id: record.id,
@@ -185,7 +191,10 @@ export function createUserRepository() {
         emailVerified: record.emailVerified,
         avatarColor: record.avatarColor,
         connectedProviders,
-        hasPassword: Boolean(record.passwordHash)
+        hasPassword: Boolean(record.passwordHash),
+        planId: subscription.planId,
+        planStatus: subscription.status,
+        entitlements: subscription.entitlements
       }
     }
   }

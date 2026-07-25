@@ -1,4 +1,4 @@
-import type { DashboardSummary, TaskAnalytics } from '#features/analytics/types'
+import type { DashboardCharts, DashboardSummary, TaskAnalytics } from '#features/analytics/types'
 import type { Task } from '#features/tasks/schemas/task'
 import { computeAnalytics, isOverdue } from '#features/analytics/utils/aggregate'
 import { createTaskRepository } from '../repositories/taskRepository'
@@ -18,6 +18,7 @@ export function createAnalyticsService() {
 
     async dashboard(userId: string): Promise<{
       summary: DashboardSummary
+      charts: DashboardCharts
       upcoming: Task[]
       overdue: Task[]
     }> {
@@ -47,6 +48,11 @@ export function createAnalyticsService() {
           overdue: analytics.overdue,
           dueToday: analytics.dueToday,
           completionRate: analytics.completionRate
+        },
+        charts: {
+          completedLast7Days: analytics.completedLast7Days,
+          statusCounts: analytics.statusCounts,
+          priorityCounts: analytics.priorityCounts
         },
         upcoming,
         overdue

@@ -2,6 +2,14 @@ import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
+import {
+  PLAN_DESCRIPTIONS,
+  PLAN_ENTITLEMENTS,
+  PLAN_FEATURES,
+  PLAN_IDS,
+  PLAN_NAMES,
+  PLAN_PRICES_CENTS
+} from '../../shared/constants/billing'
 import { hashPasswordSync } from '../utils/password'
 import * as schema from './schema'
 
@@ -97,7 +105,77 @@ function ensureSchema(connection: Database.Database) {
     CREATE INDEX IF NOT EXISTS tasks_status_idx ON tasks(status);
     CREATE INDEX IF NOT EXISTS tasks_priority_idx ON tasks(priority);
     CREATE INDEX IF NOT EXISTS tasks_due_date_idx ON tasks(due_date);
+
+    CREATE TABLE IF NOT EXISTS plans (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      price_cents INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'usd',
+      entitlements_json TEXT NOT NULL DEFAULT '[]',
+      features_json TEXT NOT NULL DEFAULT '[]',
+      active INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      plan_id TEXT NOT NULL REFERENCES plans(id),
+      status TEXT NOT NULL DEFAULT 'active',
+      current_period_end TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS subscriptions_user_id_uidx ON subscriptions(user_id);
+    CREATE INDEX IF NOT EXISTS subscriptions_plan_id_idx ON subscriptions(plan_id);
+
+    CREATE TABLE IF NOT EXISTS payment_attempts (
+      id TEXT PRIMARY KEY NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      plan_id TEXT NOT NULL REFERENCES plans(id),
+      amount_cents INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'usd',
+      status TEXT NOT NULL DEFAULT 'pending',
+      idempotency_key TEXT NOT NULL,
+      failure_reason TEXT,
+      created_at TEXT NOT NULL,
+      confirmed_at TEXT
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS payment_attempts_idempotency_uidx
+      ON payment_attempts(user_id, idempotency_key);
+    CREATE INDEX IF NOT EXISTS payment_attempts_user_id_idx ON payment_attempts(user_id);
   `)
+
+  seedPlans(connection)
+}
+
+function seedPlans(connection: Database.Database) {
+  const insert = connection.prepare(
+    `INSERT INTO plans
+      (id, name, description, price_cents, currency, entitlements_json, features_json, active, sort_order)
+     VALUES (?, ?, ?, ?, 'usd', ?, ?, 1, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       name = excluded.name,
+       description = excluded.description,
+       price_cents = excluded.price_cents,
+       entitlements_json = excluded.entitlements_json,
+       features_json = excluded.features_json,
+       active = 1,
+       sort_order = excluded.sort_order`
+  )
+
+  PLAN_IDS.forEach((planId, index) => {
+    insert.run(
+      planId,
+      PLAN_NAMES[planId],
+      PLAN_DESCRIPTIONS[planId],
+      PLAN_PRICES_CENTS[planId],
+      JSON.stringify(PLAN_ENTITLEMENTS[planId]),
+      JSON.stringify(PLAN_FEATURES[planId]),
+      index
+    )
+  })
 }
 
 function daysFromNow(days: number): string {
@@ -145,6 +223,13 @@ function seedIfEmpty(connection: Database.Database) {
        VALUES (?, ?, ?, ?, ?)`
     )
     .run(demoUserId, 'system', 'medium', 'monday', now)
+
+  connection
+    .prepare(
+      `INSERT INTO subscriptions (id, user_id, plan_id, status, current_period_end, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(`sub_${demoUserId}`, demoUserId, 'free', 'active', null, now, now)
 
   const seedTasks = [
     {

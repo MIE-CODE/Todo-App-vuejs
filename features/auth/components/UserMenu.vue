@@ -10,11 +10,16 @@ const items = computed<DropdownMenuItem[][]>(() => [
     {
       label: user.value?.name ?? 'Account',
       type: 'label' as const
+    },
+    {
+      label: `Plan: ${user.value?.planId ?? 'free'}`,
+      type: 'label' as const
     }
   ],
   [
     { label: 'Profile', icon: 'i-lucide-user', to: '/profile' },
-    { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' }
+    { label: 'Settings', icon: 'i-lucide-settings', to: '/settings' },
+    { label: 'Focus Orbit', icon: 'i-lucide-orbit', to: '/analytics' }
   ],
   [
     {

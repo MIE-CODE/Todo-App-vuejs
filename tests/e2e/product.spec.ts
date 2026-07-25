@@ -9,9 +9,8 @@ test.describe('product pages', () => {
     await expect(page.locator('#main').getByRole('heading', { name: /\w+ \d{4}/ })).toBeVisible()
 
     await page.goto('/analytics')
-    await expect(
-      page.locator('#main').getByRole('heading', { name: 'Analytics', exact: true })
-    ).toBeVisible()
+    await expect(page.locator('#main h1')).toHaveText('Focus Orbit')
+    await expect(page.getByTestId('focus-orbit-locked')).toBeVisible()
 
     await page.goto('/profile')
     await expect(

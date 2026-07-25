@@ -1,196 +1,213 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { TASK_PRIORITIES, TASK_STATUSES } from '#shared/constants/app'
-import { useAnalytics } from '#features/analytics/composables/useAnalytics'
+import { useAuth } from '#features/auth/composables/useAuth'
+import { useBilling } from '#features/billing/composables/useBilling'
+import { useFocusOrbit } from '#features/focus-orbit/composables/useFocusOrbit'
+import type { PlanId } from '#shared/constants/billing'
 
 definePageMeta({
   middleware: 'auth'
 })
 
-useSeoMeta({ title: 'Analytics · TaskFlow' })
+useSeoMeta({ title: 'Focus Orbit · TaskFlow' })
 
-const { data, pending, error, refresh } = await useAnalytics()
+const { user } = useAuth()
+const {
+  data,
+  pending,
+  error,
+  refreshOrbit,
+  capacityHours,
+  unlocked,
+  errorMessage
+} = useFocusOrbit()
 
-const maxCompletion = computed(() =>
-  Math.max(1, ...(data.value?.completedLast7Days.map((point) => point.count) ?? [0]))
-)
+const {
+  pendingPayment,
+  confirming,
+  lastError,
+  startCheckout,
+  confirmPayment
+} = useBilling()
 
-const statusLabels: Record<string, string> = {
-  todo: 'To do',
-  in_progress: 'In progress',
-  done: 'Done',
-  archived: 'Archived'
+const checkoutOpen = ref(false)
+
+async function onUpgrade(planId: Exclude<PlanId, 'free'>) {
+  const payment = await startCheckout(planId)
+  if (payment) {
+    checkoutOpen.value = true
+  }
 }
 
-const priorityColor: Record<string, string> = {
-  urgent: 'bg-error',
-  high: 'bg-warning',
-  medium: 'bg-primary',
-  low: 'bg-slate-400'
+async function onConfirm(payload: {
+  cardNumber: string
+  cardExpiry: string
+  cardCvc: string
+}) {
+  if (!pendingPayment.value) {
+    return
+  }
+  const ok = await confirmPayment({
+    attemptId: pendingPayment.value.id,
+    ...payload
+  })
+  if (ok) {
+    checkoutOpen.value = false
+    await refreshOrbit()
+  }
 }
 
-function weekdayLabel(dateKey: string): string {
-  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short' })
-}
+watch(capacityHours, async () => {
+  if (unlocked.value) {
+    await refreshOrbit()
+  }
+})
 </script>
 
 <template>
   <div class="space-y-8">
-    <div>
-      <h1 class="text-2xl font-semibold">
-        Analytics
-      </h1>
-      <p class="text-muted">
-        Insights derived from your tasks.
-      </p>
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <p class="text-sm font-medium text-primary">
+          Premium planning
+        </p>
+        <h1 class="text-2xl font-semibold">
+          Focus Orbit
+        </h1>
+        <p class="text-muted">
+          Visualize due-date gravity, focus sessions, and capacity risk.
+        </p>
+      </div>
+      <UBadge
+        :color="unlocked ? 'primary' : 'neutral'"
+        variant="subtle"
+        data-testid="orbit-plan-badge"
+      >
+        {{ user?.planId ?? 'free' }} plan
+      </UBadge>
     </div>
 
-    <UAlert
-      v-if="error"
-      color="error"
-      variant="subtle"
-      title="Could not load analytics"
-      :description="error.message"
-      :actions="[{ label: 'Retry', onClick: () => refresh() }]"
+    <FocusOrbitLocked
+      v-if="!unlocked"
+      :current-plan-id="user?.planId ?? 'free'"
+      @upgrade="onUpgrade"
     />
 
-    <template v-else-if="data">
-      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          label="Total tasks"
-          :value="data.total"
-          icon="i-lucide-layers"
-          color="neutral"
-        />
-        <StatCard
-          label="Completed"
-          :value="data.completed"
-          icon="i-lucide-check-check"
-          color="success"
-        />
-        <StatCard
-          label="Completion rate"
-          :value="`${data.completionRate}%`"
-          icon="i-lucide-percent"
-          color="primary"
-        />
-        <StatCard
-          label="Overdue"
-          :value="data.overdue"
-          icon="i-lucide-alarm-clock"
-          color="error"
-        />
-      </div>
+    <template v-else>
+      <UAlert
+        v-if="error"
+        color="error"
+        variant="subtle"
+        title="Could not load Focus Orbit"
+        :description="errorMessage ?? error.message"
+        :actions="[{ label: 'Retry', onClick: () => refreshOrbit() }]"
+      />
 
-      <div class="grid gap-6 lg:grid-cols-2">
-        <UCard>
-          <template #header>
-            <h2 class="font-semibold">
-              Completed in the last 7 days
-            </h2>
-          </template>
-          <div class="flex h-40 items-end justify-between gap-2">
-            <div
-              v-for="point in data.completedLast7Days"
-              :key="point.date"
-              class="flex flex-1 flex-col items-center gap-2"
-            >
-              <div class="flex w-full flex-1 items-end">
-                <div
-                  class="w-full rounded-t bg-primary transition-all"
-                  :style="{ height: `${(point.count / maxCompletion) * 100}%` }"
-                  :title="`${point.count} completed`"
-                />
-              </div>
-              <span class="text-xs text-muted">{{ weekdayLabel(point.date) }}</span>
+      <AppSkeletonList
+        v-else-if="pending && !data"
+        :rows="4"
+      />
+
+      <template v-else-if="data">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            label="Open on orbit"
+            :value="data.summary.openTasks"
+            icon="i-lucide-orbit"
+            color="primary"
+          />
+          <StatCard
+            label="Due soon"
+            :value="data.summary.dueSoon"
+            icon="i-lucide-radar"
+            color="warning"
+          />
+          <StatCard
+            label="Critical"
+            :value="data.summary.critical"
+            icon="i-lucide-flame"
+            color="error"
+          />
+          <StatCard
+            label="Focus score"
+            :value="data.summary.focusScore"
+            icon="i-lucide-sparkles"
+            color="success"
+          />
+        </div>
+
+        <div class="grid items-center gap-8 lg:grid-cols-[1fr_1.1fr]">
+          <OrbitVisualization
+            :nodes="data.nodes"
+            :focus-score="data.summary.focusScore"
+          />
+          <div class="space-y-3 text-sm text-muted">
+            <p>
+              Nodes closer to the rim are due sooner or higher risk. Color marks calm,
+              watch, and critical bands.
+            </p>
+            <ul class="space-y-2">
+              <li
+                v-for="node in data.nodes.slice(0, 5)"
+                :key="node.id"
+                class="flex items-center justify-between gap-3 rounded-xl border border-default px-3 py-2"
+              >
+                <span class="truncate font-medium text-default">{{ node.title }}</span>
+                <UBadge
+                  size="sm"
+                  :color="node.risk === 'critical' ? 'error' : node.risk === 'watch' ? 'warning' : 'success'"
+                  variant="subtle"
+                >
+                  {{ node.risk }}
+                </UBadge>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <OrbitPlusPanels
+          :sessions="data.sessions"
+          :workload="data.workload"
+        />
+
+        <OrbitProPanels
+          v-if="user?.planId === 'pro' || data.forecast || data.recommendations || data.whatIf"
+          :forecast="data.forecast"
+          :recommendations="data.recommendations"
+          :what-if="data.whatIf"
+          :capacity-hours="capacityHours"
+          @update:capacity-hours="capacityHours = $event"
+        />
+
+        <UCard
+          v-else
+          data-testid="pro-upsell"
+        >
+          <div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <h3 class="font-semibold">
+                Want forecasting and what-if controls?
+              </h3>
+              <p class="text-sm text-muted">
+                Pro adds risk projections, next-best actions, and capacity simulation.
+              </p>
             </div>
-          </div>
-        </UCard>
-
-        <UCard>
-          <template #header>
-            <h2 class="font-semibold">
-              By status
-            </h2>
-          </template>
-          <div class="space-y-3">
-            <div
-              v-for="status in TASK_STATUSES"
-              :key="status"
+            <UButton
+              data-testid="upsell-pro"
+              @click="onUpgrade('pro')"
             >
-              <div class="mb-1 flex justify-between text-sm">
-                <span>{{ statusLabels[status] }}</span>
-                <span class="tabular-nums text-muted">{{ data.statusCounts[status] }}</span>
-              </div>
-              <div class="h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  class="h-full rounded-full bg-primary"
-                  :style="{ width: `${data.total ? (data.statusCounts[status] / data.total) * 100 : 0}%` }"
-                />
-              </div>
-            </div>
+              Upgrade to Pro
+            </UButton>
           </div>
         </UCard>
-
-        <UCard>
-          <template #header>
-            <h2 class="font-semibold">
-              By priority
-            </h2>
-          </template>
-          <div class="space-y-3">
-            <div
-              v-for="priority in TASK_PRIORITIES"
-              :key="priority"
-            >
-              <div class="mb-1 flex justify-between text-sm">
-                <span class="capitalize">{{ priority }}</span>
-                <span class="tabular-nums text-muted">{{ data.priorityCounts[priority] }}</span>
-              </div>
-              <div class="h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  class="h-full rounded-full"
-                  :class="priorityColor[priority]"
-                  :style="{ width: `${data.total ? (data.priorityCounts[priority] / data.total) * 100 : 0}%` }"
-                />
-              </div>
-            </div>
-          </div>
-        </UCard>
-
-        <UCard>
-          <template #header>
-            <h2 class="font-semibold">
-              Top tags
-            </h2>
-          </template>
-          <div
-            v-if="data.topTags.length"
-            class="flex flex-wrap gap-2"
-          >
-            <UBadge
-              v-for="tag in data.topTags"
-              :key="tag.tag"
-              color="neutral"
-              variant="soft"
-              size="lg"
-            >
-              #{{ tag.tag }} · {{ tag.count }}
-            </UBadge>
-          </div>
-          <p
-            v-else
-            class="py-4 text-center text-sm text-muted"
-          >
-            No tags yet. Add tags to your tasks to see them here.
-          </p>
-        </UCard>
-      </div>
+      </template>
     </template>
 
-    <AppSkeletonList
-      v-else-if="pending"
-      :rows="4"
+    <SandboxCheckoutModal
+      v-model:open="checkoutOpen"
+      :payment="pendingPayment"
+      :confirming="confirming"
+      :error="lastError"
+      @confirm="onConfirm"
     />
   </div>
 </template>

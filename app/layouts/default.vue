@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useAuth } from '#features/auth/composables/useAuth'
 
 const route = useRoute()
 const { isDark, toggle } = useTheme()
+const { user } = useAuth()
 
 const links = [
-  { label: 'Dashboard', to: '/dashboard', icon: 'i-lucide-layout-dashboard' },
-  { label: 'Tasks', to: '/tasks', icon: 'i-lucide-list-checks' },
-  { label: 'Calendar', to: '/calendar', icon: 'i-lucide-calendar-days' },
-  { label: 'Analytics', to: '/analytics', icon: 'i-lucide-bar-chart-3' }
+  { label: 'Dashboard', to: '/dashboard', icon: 'i-lucide-layout-dashboard', premium: false },
+  { label: 'Tasks', to: '/tasks', icon: 'i-lucide-list-checks', premium: false },
+  { label: 'Calendar', to: '/calendar', icon: 'i-lucide-calendar-days', premium: false },
+  { label: 'Focus Orbit', to: '/analytics', icon: 'i-lucide-orbit', premium: true }
 ]
 
 const isActive = (path: string) =>
@@ -17,6 +19,8 @@ const isActive = (path: string) =>
 const currentTitle = computed(
   () => links.find((link) => isActive(link.to))?.label ?? 'TaskFlow'
 )
+
+const planId = computed(() => user.value?.planId ?? 'free')
 </script>
 
 <template>
@@ -45,7 +49,17 @@ const currentTitle = computed(
           block
           class="justify-start"
         >
-          {{ link.label }}
+          <span class="flex w-full items-center justify-between gap-2">
+            <span>{{ link.label }}</span>
+            <UBadge
+              v-if="link.premium && planId === 'free'"
+              size="sm"
+              color="primary"
+              variant="subtle"
+            >
+              Pro
+            </UBadge>
+          </span>
         </UButton>
       </nav>
 
@@ -73,6 +87,15 @@ const currentTitle = computed(
         </div>
 
         <div class="flex items-center gap-2">
+          <UBadge
+            v-if="planId !== 'free'"
+            color="primary"
+            variant="subtle"
+            class="hidden sm:inline-flex"
+            data-testid="nav-plan-badge"
+          >
+            {{ planId }}
+          </UBadge>
           <UButton
             :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
             color="neutral"

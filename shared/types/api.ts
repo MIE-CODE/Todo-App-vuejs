@@ -1,4 +1,5 @@
 import type { OAuthProvider, ThemePreference, WeekStartDay } from '#shared/constants/app'
+import type { Entitlement, PlanId, SubscriptionStatus } from '#shared/constants/billing'
 
 /**
  * Shared API contract types.
@@ -45,6 +46,40 @@ export interface SessionUser {
   /** Which providers this account can sign in with. */
   connectedProviders: OAuthProvider[]
   hasPassword: boolean
+  /** Confirmed billing plan; defaults to free when no subscription row exists. */
+  planId: PlanId
+  planStatus: SubscriptionStatus
+  entitlements: Entitlement[]
+}
+
+export interface BillingPlan {
+  id: PlanId
+  name: string
+  description: string
+  priceCents: number
+  priceLabel: string
+  features: string[]
+  entitlements: Entitlement[]
+  highlighted: boolean
+}
+
+export interface SubscriptionSummary {
+  planId: PlanId
+  status: SubscriptionStatus
+  entitlements: Entitlement[]
+  currentPeriodEnd: string | null
+  updatedAt: string
+}
+
+export interface PaymentAttemptSummary {
+  id: string
+  planId: PlanId
+  amountCents: number
+  currency: string
+  status: 'pending' | 'confirmed' | 'failed'
+  failureReason: string | null
+  createdAt: string
+  confirmedAt: string | null
 }
 
 export interface UserPreferences {

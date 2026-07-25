@@ -32,3 +32,10 @@ export interface DashboardSummary {
   dueToday: number
   completionRate: number
 }
+
+/** Chart series included on the dashboard payload. */
+export interface DashboardCharts {
+  completedLast7Days: CompletionPoint[]
+  statusCounts: Record<TaskStatus, number>
+  priorityCounts: Record<TaskPriority, number>
+}
