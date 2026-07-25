@@ -17,6 +17,25 @@ let sqlite: Database.Database | null = null
 let db: ReturnType<typeof drizzle<typeof schema>> | null = null
 
 /**
+ * Resolve where the SQLite file lives.
+ *
+ * Locally we keep it under the project (`.data/app.sqlite`). On Vercel/AWS
+ * Lambda the deploy filesystem is read-only except `/tmp`, so we must open
+ * the database there — otherwise every auth/API call 500s with EROFS.
+ *
+ * Note: `/tmp` is per-instance and ephemeral. Fine for demos; use a hosted
+ * DB (Turso/Postgres) when you need durable multi-instance data.
+ */
+function resolveDatabasePath(configured: string): string {
+  const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME)
+  if (isServerless) {
+    const fileName = configured.split(/[/\\]/).pop() || 'app.sqlite'
+    return resolve('/tmp', fileName)
+  }
+  return resolve(process.cwd(), configured)
+}
+
+/**
  * Singleton SQLite connection for the Nitro process.
  * Opening a new connection per request is wasteful and can lock the file.
  */
@@ -26,12 +45,13 @@ export function useDatabase() {
   }
 
   const config = useRuntimeConfig()
-  const databasePath = resolve(process.cwd(), config.databasePath)
+  const databasePath = resolveDatabasePath(config.databasePath)
 
   mkdirSync(dirname(databasePath), { recursive: true })
 
   sqlite = new Database(databasePath)
-  sqlite.pragma('journal_mode = WAL')
+  // WAL needs a writable companion fileset; DELETE is safer on ephemeral /tmp.
+  sqlite.pragma(process.env.VERCEL ? 'journal_mode = DELETE' : 'journal_mode = WAL')
   sqlite.pragma('foreign_keys = ON')
 
   db = drizzle(sqlite, { schema })
