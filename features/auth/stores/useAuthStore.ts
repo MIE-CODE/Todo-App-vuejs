@@ -25,6 +25,8 @@ export const useAuthStore = defineStore('auth', () => {
   const preferences = ref<UserPreferences | null>(null)
   const sessions = ref<SessionSummary[]>([])
   const loaded = ref(false)
+  /** ISO expiry of the active session; drives client-side auto-logout. */
+  const sessionExpiresAt = ref<string | null>(null)
 
   const isAuthenticated = computed(() => user.value !== null)
 
@@ -33,11 +35,21 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await $api<{
       user: SessionUser | null
       preferences: UserPreferences | null
+      expiresAt: string | null
     }>('/api/auth/session')
 
     user.value = result.user
     preferences.value = result.preferences
+    sessionExpiresAt.value = result.expiresAt
     loaded.value = true
+  }
+
+  /** Clears client auth state locally (used when the session expires). */
+  function clearSession(): void {
+    user.value = null
+    preferences.value = null
+    sessions.value = []
+    sessionExpiresAt.value = null
   }
 
   /** Fetches the session exactly once per app lifecycle (idempotent). */
@@ -70,9 +82,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     const { $api } = useNuxtApp()
     await $api('/api/auth/logout', { method: 'POST' })
-    user.value = null
-    preferences.value = null
-    sessions.value = []
+    clearSession()
   }
 
   function startOAuth(provider: OAuthProvider): Promise<void> {
@@ -133,9 +143,11 @@ export const useAuthStore = defineStore('auth', () => {
     preferences,
     sessions,
     loaded,
+    sessionExpiresAt,
     isAuthenticated,
     fetchSession,
     ensureLoaded,
+    clearSession,
     register,
     login,
     logout,

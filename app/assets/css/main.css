@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+/*
+ * Feature and shared code live outside Nuxt's srcDir (app/), so Tailwind's
+ * production content scan misses them and drops classes used only there
+ * (e.g. the calendar's min-h-24). Register them explicitly. Dev works without
+ * this because utilities are generated on demand.
+ */
+@source "../../../features/**/*.{vue,ts,js}";
+@source "../../../shared/**/*.{vue,ts,js}";
+
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
 

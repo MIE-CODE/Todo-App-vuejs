@@ -8,7 +8,8 @@ import { useDatabase } from '../database/client'
 import { sessions, users } from '../database/schema'
 import { createUserRepository } from '../repositories/userRepository'
 
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14
+/** Sessions live for 3 hours from login, then the user must sign in again. */
+const SESSION_TTL_MS = 1000 * 60 * 60 * 3
 
 function cookieOptions(maxAgeSeconds: number) {
   return {
@@ -154,11 +155,14 @@ export async function getOptionalUser(event: H3Event): Promise<SessionUser | nul
 
   const user = await repository.toSessionUser(record)
   event.context.user = user
+  event.context.sessionExpiresAt = row.expiresAt
   return user
 }
 
 declare module 'h3' {
   interface H3EventContext {
     user?: SessionUser
+    /** ISO expiry of the active session; lets the client schedule auto-logout. */
+    sessionExpiresAt?: string
   }
 }
