@@ -259,7 +259,7 @@ useSeoMeta({
         v-model="search"
         icon="i-lucide-search"
         placeholder="Search tasks…"
-        size="lg"
+        size="xl"
         class="w-full lg:max-w-lg"
         aria-label="Search tasks"
       />
